@@ -1,3 +1,5 @@
+from django.contrib.auth.decorators import login_required
+from django.core.paginator import Paginator
 from django.http import HttpResponse, HttpResponseNotFound, Http404
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse_lazy
@@ -8,7 +10,6 @@ from .forms import *
 from .models import *
 from .utils import *
 
-
 class WomenHome(DataMixin, ListView):
     model = Women
     template_name = 'women/index.html'
@@ -16,11 +17,13 @@ class WomenHome(DataMixin, ListView):
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(**kwargs)
-        c_def = self.get_user_context(title='Главная страница')
+        c_def = self.get_user_context(title="Главная страница")
         return dict(list(context.items()) + list(c_def.items()))
 
     def get_queryset(self):
         return Women.objects.filter(is_published=True)
+
+
 # def index(request):
 #     posts = Women.objects.all()
 #
@@ -30,11 +33,16 @@ class WomenHome(DataMixin, ListView):
 #         'title': 'Главная страница',
 #         'cat_selected': 0,
 #     }
+#
 #     return render(request, 'women/index.html', context=context)
 
-
 def about(request):
-    return render(request, 'women/about.html', {'menu': menu, 'title': 'О сайте'})
+    contact_list = Women.objects.all()
+    paginator = Paginator(contact_list, 3)
+
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    return render(request, 'women/about.html', {'page_obj': page_obj, 'menu': menu, 'title': 'О сайте'})
 
 
 class AddPage(LoginRequiredMixin, DataMixin, CreateView):
@@ -46,7 +54,7 @@ class AddPage(LoginRequiredMixin, DataMixin, CreateView):
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(**kwargs)
-        c_def = self.get_user_context(title='Добавление статьи')
+        c_def = self.get_user_context(title="Добавление статьи")
         return dict(list(context.items()) + list(c_def.items()))
 
 
@@ -57,15 +65,12 @@ class AddPage(LoginRequiredMixin, DataMixin, CreateView):
 #             #print(form.cleaned_data)
 #             form.save()
 #             return redirect('home')
-#
 #     else:
 #         form = AddPostForm()
-#     return render(request, 'women/addpage.html', {'form': form, 'menu': menu, 'title': "Добавление статьи"})
-
+#     return render(request, 'women/addpage.html', {'form': form, 'menu': menu, 'title': 'Добавление статьи'})
 
 def contact(request):
     return HttpResponse("Обратная связь")
-
 
 def login(request):
     return HttpResponse("Авторизация")
@@ -73,7 +78,6 @@ def login(request):
 
 def pageNotFound(request, exception):
     return HttpResponseNotFound('<h1>Страница не найдена</h1>')
-
 
 # def show_post(request, post_slug):
 #     post = get_object_or_404(Women, slug=post_slug)
@@ -84,6 +88,7 @@ def pageNotFound(request, exception):
 #         'title': post.title,
 #         'cat_selected': post.cat_id,
 #     }
+#
 #     return render(request, 'women/post.html', context=context)
 
 class ShowPost(DataMixin, DetailView):
@@ -126,4 +131,6 @@ class WomenCategory(DataMixin, ListView):
 #         'title': 'Отображение по рубрикам',
 #         'cat_selected': cat_id,
 #     }
+#
 #     return render(request, 'women/index.html', context=context)
+
